@@ -2,19 +2,9 @@ import { AudioManager } from '../features/media/AudioManager';
 import { ScreenShareManager } from '../features/media/ScreenShareManager';
 import { VideoManager } from '../features/media/VideoManager';
 import { ParticipantManager } from '../features/participants/ParticipantManager';
+import type { GetRoomByIdResponse, RoomInfo, RoomMember } from '../types/RoomTypes';
 import { Connection } from './Connection';
 import { EventEmitter } from './EventEmitter';
-
-interface RoomInfo {
-  id: string;
-  room_code: string;
-  user_id: string;
-  room_name: string;
-  room_type: string;
-  is_active: boolean;
-  created_at: string;
-  updated_at: string;
-}
 
 export class MeetingClient extends EventEmitter {
   private connection: Connection;
@@ -22,6 +12,8 @@ export class MeetingClient extends EventEmitter {
   private token: string;
 
   private currentRoom: RoomInfo | null = null;
+
+  private membersRoom: RoomMember[] = [];
 
   public participants: ParticipantManager;
 
@@ -111,5 +103,28 @@ export class MeetingClient extends EventEmitter {
   async leaveRoom() {
     // await this.connection.disconnect();
     // this.emit('left', { roomId: this.currentRoom?.id });
+  }
+
+  /**
+   * Lấy thông tin phòng và thành viên theo id
+   */
+  async getRoomById(roomId: string): Promise<GetRoomByIdResponse> {
+    const url = `${this.baseUrl}/stream-gate/rooms/${roomId}`;
+    const response = await fetch(url, {
+      method: 'GET',
+      headers: {
+        'Content-Type': 'application/json',
+        Authorization: `Bearer ${this.token}`,
+      },
+    });
+    if (!response.ok) {
+      throw new Error('Failed to get room info');
+    }
+    const data = await response.json();
+    this.membersRoom = data.members || [];
+    return {
+      room: data.room,
+      members: this.membersRoom,
+    };
   }
 }
