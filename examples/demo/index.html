@@ -17,14 +17,23 @@
       <div class="col-md-8">
         <h2>Ermis meet Sample App</h2>
         <br />
-        <div id="connect-area">
-          <div>
-            <b>Token</b>
-          </div>
-          <div>
-            <input type="text" class="form-control" id="token" />
-          </div>
+
+        <div class="form-inline mb-2">
+          <input type="text" id="roomNameInput" class="form-control mr-2" placeholder="Enter room name" />
+          <button id="createRoom" class="btn btn-primary">Create Room</button>
         </div>
+
+        <div class="form-inline mb-2">
+          <input type="text" id="roomCodeInput" class="form-control mr-2" placeholder="Enter room code" />
+          <button id="joinRoom" class="btn btn-secondary ml-2">Join Room</button>
+        </div>
+
+        <div class="form-inline mb-2">
+          <button id="leaveRoom" class="btn btn-danger ml-2">Leave Room</button>
+        </div>
+
+        <div id="local-video"></div>
+        <div id="remote-videos"></div>
       </div>
     </div>
   </div>
