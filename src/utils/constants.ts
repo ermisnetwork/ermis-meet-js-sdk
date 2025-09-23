@@ -1,0 +1,7 @@
+export const DEFAULT_ROOM_NAME = 'Untitled Room';
+
+export const ERROR_CODES = {
+  INVALID_TOKEN: 'INVALID_TOKEN',
+  INVALID_ROOM: 'INVALID_ROOM',
+  MEDIA_ERROR: 'MEDIA_ERROR',
+};
