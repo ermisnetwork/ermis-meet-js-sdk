@@ -1,39 +1,46 @@
-import { AudioManager } from '../features/media/AudioManager';
-import { ScreenShareManager } from '../features/media/ScreenShareManager';
-import { VideoManager } from '../features/media/VideoManager';
-import { ParticipantManager } from '../features/participants/ParticipantManager';
+// import { AudioManager } from '../features/media/AudioManager';
+// import { ScreenShareManager } from '../features/media/ScreenShareManager';
+// import { VideoManager } from '../features/media/VideoManager';
+// import { ParticipantManager } from '../features/participants/ParticipantManager';
+// @ts-ignore
+import { Publisher } from '../../public/publisher';
 import type { GetRoomByIdResponse, RoomInfo, RoomMember } from '../types/RoomTypes';
-import { Connection } from './Connection';
+// import { Connection } from './Connection';
 import { EventEmitter } from './EventEmitter';
 
 export class MeetingClient extends EventEmitter {
-  private connection: Connection;
+  token: string;
 
-  private token: string;
+  baseUrl: string;
 
-  private currentRoom: RoomInfo | null = null;
+  baseUrlWebTP?: string;
 
-  private membersRoom: RoomMember[] = [];
+  currentRoom: RoomInfo | null = null;
 
-  public participants: ParticipantManager;
+  membersRoom: RoomMember[] = [];
 
-  public audio: AudioManager;
+  publisher?: Publisher;
 
-  public video: VideoManager;
+  // private connection: Connection;
 
-  public screen: ScreenShareManager;
+  // public participants: ParticipantManager;
 
-  private baseUrl: string;
+  // public audio: AudioManager;
+
+  // public video: VideoManager;
+
+  // public screen: ScreenShareManager;
 
   constructor(token: string, baseUrl: string) {
     super();
     this.token = token;
     this.baseUrl = baseUrl;
-    this.connection = new Connection(token);
-    this.participants = new ParticipantManager();
-    this.audio = new AudioManager();
-    this.video = new VideoManager();
-    this.screen = new ScreenShareManager();
+    this.baseUrlWebTP = 'https://hoangbim.bandia.vn:4433/stream-gate/meeting/wt';
+    // this.connection = new Connection(token);
+    // this.participants = new ParticipantManager();
+    // this.audio = new AudioManager();
+    // this.video = new VideoManager();
+    // this.screen = new ScreenShareManager();
   }
 
   /**
@@ -68,7 +75,7 @@ export class MeetingClient extends EventEmitter {
       updated_at: data.updated_at || '',
     };
     this.currentRoom = room;
-    this.emit('roomCreated', room);
+    // this.emit('roomCreated', room);
     return room;
   }
 
@@ -94,10 +101,14 @@ export class MeetingClient extends EventEmitter {
     if (!response.ok) {
       throw new Error('Failed to join room');
     }
+    const data = await response.json();
+
+    this.setupMeeting(data.room_id, data.stream_id);
 
     // Optionally handle response data if needed
-    await this.connection.connect();
-    this.emit('joined', { room_code: code });
+    // await this.connection.connect();
+    // this.emit('joined', { room_code: code });
+    return data;
   }
 
   async leaveRoom() {
@@ -122,9 +133,38 @@ export class MeetingClient extends EventEmitter {
     }
     const data = await response.json();
     this.membersRoom = data.members || [];
+    this.currentRoom = data.room || null;
     return {
       room: data.room,
-      members: this.membersRoom,
+      members: data.members || [],
     };
+  }
+
+  private async setupMeeting(roomId: string, streamId: string): Promise<void> {
+    const localVideoElement = document.createElement('video');
+    localVideoElement.autoplay = true;
+    localVideoElement.playsInline = true;
+
+    try {
+      this.publisher = new Publisher({
+        publishUrl: `${this.baseUrlWebTP}/${roomId}/${streamId}`,
+        streamType: 'camera',
+        videoElement: localVideoElement,
+        streamId: 'camera_stream',
+        width: 1280,
+        height: 720,
+        framerate: 60,
+        bitrate: 1_500_000,
+        onStatus: (msg: any, isError: boolean) => {
+          console.log('------Publisher status:------', msg, isError);
+        },
+        onServerEvent: async (event: any) => {
+          console.log('------Publisher server event:------', event);
+        },
+      });
+      await this.publisher.startPublishing();
+    } catch (error) {
+      console.error('---------Failed to start publisher:----------', error);
+    }
   }
 }
